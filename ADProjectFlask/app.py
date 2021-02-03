@@ -15,16 +15,26 @@ import joblib
 
 from flask import Flask, request, jsonify
 import json
+import sqlalchemy
+import pyodbc
+
+# User environment variables for database connection
+from dotenv import load_dotenv
+import os
+load_dotenv()
+ServerName = os.getenv("SERVER_NAME")
+DatabaseName = os.getenv("DATABASE_NAME")
+InstanceName = os.getenv("INSTANCE_NAME")
 
 app = Flask(__name__)
 
 # Make the WSGI interface available at the top level so wfastcgi can get it.
 wsgi_app = app.wsgi_app
 
-
 @app.route('/')
 def hello():
     """Renders a sample page."""
+    getDataFromDB()
     return "Hello World!"
 
 @app.route("/api/receiveData", methods=["POST"])
@@ -49,9 +59,10 @@ def generate_allergen_tage():
     print(corpus_recipe)
 
     # Load the csv, will read from database here in the future
-    df = pd.read_csv("FoodData.csv")
-    corups_allergen = df["Allergy"].tolist()
-    corpus_ingredient = df["Food"].tolist()
+    # df = pd.read_csv("FoodData.csv")
+    # corups_allergen = df["Allergy"].tolist()
+    # corpus_ingredient = df["Food"].tolist()
+    corpus_ingredient, corups_allergen = getDataFromDB()
 
     # Load the pre-calculated TF-IDF for the allergen tags
     tfidf_allergen = pd.read_csv("allergen_dataframe.csv")
@@ -95,6 +106,20 @@ def generate_allergen_tage():
     return_data = { "allergens": tags }
 
     return jsonify(return_data)
+
+def getDataFromDB():
+    MSSQLengine = sqlalchemy.create_engine('mssql+pyodbc://' + ServerName + "\\" + InstanceName + '/' + DatabaseName + '?driver=SQL+Server+Native+Client+11.0')
+
+    tag_name = []
+    warning = []
+
+    with MSSQLengine.connect() as con:
+        rs = con.execute('SELECT TagId, tagName, warning FROM Tag ORDER BY TagId')
+        for row in rs:
+            tag_name.append(row[1])
+            warning.append(row[2])
+            
+    return tag_name, warning
 
 
 if __name__ == '__main__':

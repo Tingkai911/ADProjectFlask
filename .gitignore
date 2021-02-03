@@ -338,3 +338,10 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+# Ignore enviornmental variables
+ADProjectFlask/.env
+
+# Ignore other stuff
+ADProjectFlask/.vscode
+
