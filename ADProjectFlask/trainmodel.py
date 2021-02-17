@@ -11,13 +11,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import joblib
 
+from urllib import parse
+
 # User environment variables for database connection
 from dotenv import load_dotenv
 import os
 load_dotenv()
-ServerName = os.getenv("SERVER_NAME")
-DatabaseName = os.getenv("DATABASE_NAME")
-InstanceName = os.getenv("INSTANCE_NAME")
+ConnectionString = os.getenv("CONNECTION_STRING")
 
 def main():
     corpus = getDataFromDB()
@@ -53,11 +53,12 @@ def main():
     print("Complete")
 
 def getDataFromDB():
-    MSSQLengine = sqlalchemy.create_engine('mssql+pyodbc://' + ServerName + "\\" + InstanceName + '/' + DatabaseName + '?driver=SQL+Server+Native+Client+11.0')
+    params = parse.quote_plus(ConnectionString)
+    engine = sqlalchemy.create_engine("mssql+pyodbc:///?odbc_connect=%s" % params)
 
     tag_name = []
 
-    with MSSQLengine.connect() as con:
+    with engine.connect() as con:
         rs = con.execute('SELECT TagId, tagName FROM Tag ORDER BY TagId')
         for row in rs:
             tag_name.append(row[1])
